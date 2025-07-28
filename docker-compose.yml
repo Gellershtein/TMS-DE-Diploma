@@ -88,9 +88,9 @@ services:
   postgres:
     image: postgres:13
     environment:
-      POSTGRES_USER: airflow
-      POSTGRES_PASSWORD: airflow
-      POSTGRES_DB: airflow
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres-db-volume:/var/lib/postgresql/data
     healthcheck:
@@ -121,9 +121,9 @@ services:
         soft: 262144
         hard: 262144
     environment:
-      CLICKHOUSE_USER: airflow
-      CLICKHOUSE_PASSWORD: airflow
-      CLICKHOUSE_DB: airflow
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB}
     volumes:
       - clickhouse-data-volume:/var/lib/clickhouse
       - clickhouse-log-volume:/var/log/clickhouse-server
@@ -167,8 +167,8 @@ services:
       - "9001:9001"
       - "9002:9002"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     command: server /data --console-address :9001
     volumes:
       - minio_data:/data
@@ -189,7 +189,7 @@ services:
     restart: always
 
   kafka:
-    image: confluentinc/cp-kafka:latest
+    image: confluentinc/cp-kafka:7.4.0
     depends_on:
       - zookeeper
     ports:
