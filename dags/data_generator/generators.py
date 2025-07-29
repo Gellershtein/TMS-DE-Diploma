@@ -47,16 +47,33 @@ def generate_like(user_id, target_type, target_id):
         created_at=datetime.now()
     )
 
-def generate_reaction(user_id, target_type, target_id):
-    reactions = ["like", "love", "wow", "sad", "angry"]
-    return Reaction(
-        reaction_id=f"reaction_{faker.unique.random_int(1, 100000)}",
-        user_id=user_id,
-        target_type=target_type,
-        target_id=target_id,
-        reaction=random.choice(reactions),
-        created_at=datetime.now()
-    )
+def generate_reactions(users, posts, comments, n=100):
+    reactions = []
+    user_ids = [user.user_id for user in users]
+    post_ids = [post.post_id for post in posts]
+    comment_ids = [comment.comment_id for comment in comments]
+
+    for _ in range(n):
+        user_id = random.choice(user_ids)
+        # Выбираем: 70% посты, 30% комментарии
+        if random.random() < 0.7 or not comment_ids:
+            target_type = "post"
+            target_id = random.choice(post_ids)
+        else:
+            target_type = "comment"
+            target_id = random.choice(comment_ids)
+        reaction_type = random.choice(["like", "love", "wow", "angry", "sad"])
+        reactions.append(
+            Reaction(
+                reaction_id=f"reaction_{faker.unique.random_int(1, 100000)}",
+                user_id=user_id,
+                target_type=target_type,
+                target_id=target_id,
+                reaction=reaction_type,
+                created_at=datetime.now()
+            )
+        )
+    return reactions
 
 def generate_community():
     return Community(
