@@ -18,7 +18,7 @@ def write_to_kafka(topic, event):
         bootstrap_servers=get_kafka_bootstrap_servers(),
         value_serializer=lambda value: json.dumps(value, default=str).encode("utf-8")
     )
-    producer.send(topic, event.dict())
+    producer.send(topic, event)
     producer.flush()
 
 def write_to_minio(filename, events):
@@ -30,7 +30,7 @@ def write_to_minio(filename, events):
     )
     if not client.bucket_exists(get_minio_bucket()):
         client.make_bucket(get_minio_bucket())
-    data = json.dumps([event.dict() for event in events], default=str).encode("utf-8")
+    data = json.dumps([event for event in events], default=str).encode("utf-8")
     client.put_object(
         get_minio_bucket(),
         filename,
@@ -40,4 +40,4 @@ def write_to_minio(filename, events):
 
 def write_to_file(filename, events):
     with open(filename, "w") as f:
-        json.dump([event.dict() for event in events], f, default=str)
+        json.dump([event for event in events], f, default=str)

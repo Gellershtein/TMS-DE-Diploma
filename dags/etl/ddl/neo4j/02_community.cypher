@@ -1,1 +1,0 @@
-CREATE CONSTRAINT IF NOT EXISTS FOR (c:Community) REQUIRE c.community_id IS UNIQUE;

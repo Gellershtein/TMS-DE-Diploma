@@ -1,13 +1,17 @@
 import json
 from minio import Minio
 from kafka import KafkaConsumer
-from dags.etl import save_to_postgres
-from dags.etl import save_to_neo4j
-from config import (
+from etl.save_to_raw import save_to_raw
+from etl.config import (
     get_kafka_bootstrap_servers,
     get_minio_endpoint, get_minio_access_key, get_minio_secret_key,
     get_minio_bucket, get_minio_use_ssl
 )
+
+RAW_ENTITY_TYPES = {
+    "user", "post", "comment", "like", "reaction",
+    "community", "media", "pinned_post", "friend", "group_member"
+}
 
 def ingest_from_kafka():
     consumer = KafkaConsumer(
@@ -23,10 +27,8 @@ def ingest_from_kafka():
         event = msg.value
         event_type = event.get("type")
         # Распределение по типам
-        if event_type in {"user", "post", "comment", "like", "reaction", "community", "media", "pinned_post"}:
-            save_to_postgres(event, event_type)
-        elif event_type in {"friend", "group_member"}:
-            save_to_neo4j(event, event_type)
+        if event_type in RAW_ENTITY_TYPES:
+            save_to_raw(event, event_type)
 
 def ingest_from_minio():
     minio_client = Minio(
@@ -48,9 +50,7 @@ def ingest_from_minio():
             continue
         for event in events:
             event_type = event.get("type")
-            if event_type in {"user", "post", "comment", "like", "reaction", "community", "media", "pinned_post"}:
-                save_to_postgres(event, event_type)
-            elif event_type in {"friend", "group_member"}:
-                save_to_neo4j(event, event_type)
+            if event_type in RAW_ENTITY_TYPES:
+                save_to_raw(event, event_type)
         # (опционально) удалять объект после обработки:
-        # minio_client.remove_object(bucket, obj.object_name)
+        minio_client.remove_object(bucket, obj.object_name)

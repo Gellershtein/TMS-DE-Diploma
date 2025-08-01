@@ -2,21 +2,21 @@ import os
 import psycopg2
 from dags.etl.config import get_postgres_config
 
-def run_sql_files(folder):
+def run_sql_files(folder_or_file):
     config = get_postgres_config()
     conn = psycopg2.connect(**config)
     cur = conn.cursor()
-    files = sorted(os.listdir(folder))
+
+    # Если это файл — выполняем просто его, если папка — все файлы по алфавиту
+    if os.path.isfile(folder_or_file):
+        files = [folder_or_file]
+    else:
+        files = [os.path.join(folder_or_file, file) for file in sorted(os.listdir(folder_or_file)) if file.endswith('.sql')]
     for file in files:
-        if not file.endswith('.sql'):
-            continue
-        with open(os.path.join(folder, file), encoding='utf-8') as f:
+        with open(file, encoding='utf-8') as f:
             sql = f.read()
             print(f"Running {file}...")
             cur.execute(sql)
     conn.commit()
     cur.close()
     conn.close()
-
-if __name__ == "__main__":
-    run_sql_files(os.path.join(os.path.dirname(__file__), "ddl", "postgres"))
