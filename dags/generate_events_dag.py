@@ -6,7 +6,7 @@ import sys
 import os
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "data_generator"))
-from generate_events import generate_to_kafka, generate_to_minio
+from generate_events import generate_to_kafka, generate_to_minio, generate_all_data_and_return
 
 default_args = {
     "owner": "airflow",
@@ -19,8 +19,14 @@ with DAG(
     default_args=default_args,
     schedule_interval="* * * * *", #генерируем данные каждую минуту
     start_date=datetime(2024, 7, 28),
-    catchup=False
+    catchup=False,
+    tags=["generator", "raw", "minio", "kafka"],
 ) as dag:
+
+    generate_data = PythonOperator(
+        task_id="generate_data",
+        python_callable=generate_all_data_and_return,
+    )
 
     kafka_task = PythonOperator(
         task_id="generate_kafka_events",
@@ -32,4 +38,4 @@ with DAG(
         python_callable=generate_to_minio,
     )
 
-    kafka_task >> minio_task
+    generate_data >> [kafka_task, minio_task]
