@@ -1,0 +1,1 @@
+SELECT user_id, target_id, target_type, reaction, created_at FROM dds.reactions;

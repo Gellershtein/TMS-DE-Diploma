@@ -1,0 +1,1 @@
+SELECT post_id, media_id FROM dds.media;
