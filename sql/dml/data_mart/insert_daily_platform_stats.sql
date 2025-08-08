@@ -1,0 +1,22 @@
+INSERT INTO data_mart.daily_platform_stats
+(
+    dt,
+    total_posts,
+    total_comments,
+    total_reactions,
+    interactions_per_post,
+    dau,
+    wau,
+    dau_wau_ratio
+)
+VALUES
+(
+    %(dt)s,
+    %(total_posts)s,
+    %(total_comments)s,
+    %(total_reactions)s,
+    %(interactions_per_post)s,
+    %(dau)s,
+    %(wau)s,
+    %(dau_wau_ratio)s
+);

@@ -48,27 +48,33 @@ with DAG(
         op_args=[os.path.join(BASE, "sql", "ddl", "dds")]
     )
 
+    # 4. Postgres: Создание таблиц в DDS схеме
+    create_dds_indexes = PythonOperator(
+        task_id='create_dds_indexes',
+        python_callable=run_sql_files,
+        op_args=[os.path.join(BASE, "sql", "ddl", "dds/indexes")]
+    )
 
-    # 4. Neo4j: создание констрейнтов
+    # 5. Neo4j: создание констрейнтов
     create_neo4j_constraints = PythonOperator(
         task_id='create_neo4j_constraints',
         python_callable=run_cypher_files,
         op_args=[os.path.join(BASE, "cypher", "ddl")]
     )
 
-    # 5. Clickhouse: Создание базы Clickhouse
+    # 6. Clickhouse: Создание базы Clickhouse
     create_ch_database = PythonOperator(
         task_id="create_clickhouse_db",
         python_callable=create_clickhouse_database,
     )
 
-    # 6. Clickhouse: Создание таблиц в Clickhouse
+    # 7. Clickhouse: Создание таблиц в Clickhouse
     create_ch_tables = PythonOperator(
         task_id="create_clickhouse_tables",
         python_callable=run_ch_sql_folder,  # sql/ddl/data_mart/*.sql
         op_kwargs={"layer": "ddl", "subdir": "data_mart"},
     )
     # Граф выполнения
-    create_dwh_database >> init_pg_schemas >> create_raw_tables >> create_dds_tables
+    create_dwh_database >> init_pg_schemas >> create_raw_tables >> create_dds_tables >> create_dds_indexes
     [create_raw_tables, create_dds_tables] >> create_neo4j_constraints
     create_ch_database >> create_ch_tables
