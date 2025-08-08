@@ -4,7 +4,8 @@ from datetime import datetime
 import os
 from dags.etl.init_schemas_postgres import run_sql_files
 from dags.etl.init_schemas_neo4j import run_cypher_files
-from dags.etl.create_database import create_database
+from dags.etl.create_database import create_pg_database, create_clickhouse_database
+from dags.etl.init_schemas_clickhouse import run_ch_sql_folder
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -13,17 +14,17 @@ default_args = {
 }
 
 with DAG(
-    dag_id='INIT_RAW_and_DDS_schemas',
+    dag_id='INIT_POSTGRES_NEO4J_CLICKHOUSE_schemas',
     schedule_interval=None,
     catchup=False,
     default_args=default_args,
-    tags=["ddl", "init", "raw", "dds", "postgres", "neo4j"],
+    tags=["DDL", "init", "raw", "dds","data_mart", "postgres", "neo4j", "clickhouse"],
 ) as dag:
 
     # 0. Postgres: Создание базы DWH
     create_dwh_database = PythonOperator(
         task_id='create_dwh_database',
-        python_callable=create_database
+        python_callable=create_pg_database
     )
 
     # 1. Postgres: Инициализация RAW и DDS схем
@@ -47,6 +48,7 @@ with DAG(
         op_args=[os.path.join(BASE, "sql", "ddl", "dds")]
     )
 
+
     # 4. Neo4j: создание констрейнтов
     create_neo4j_constraints = PythonOperator(
         task_id='create_neo4j_constraints',
@@ -54,6 +56,19 @@ with DAG(
         op_args=[os.path.join(BASE, "cypher", "ddl")]
     )
 
+    # 5. Clickhouse: Создание базы Clickhouse
+    create_ch_database = PythonOperator(
+        task_id="create_clickhouse_db",
+        python_callable=create_clickhouse_database,
+    )
+
+    # 6. Clickhouse: Создание таблиц в Clickhouse
+    create_ch_tables = PythonOperator(
+        task_id="create_clickhouse_tables",
+        python_callable=run_ch_sql_folder,  # sql/ddl/data_mart/*.sql
+        op_kwargs={"layer": "ddl", "subdir": "data_mart"},
+    )
     # Граф выполнения
     create_dwh_database >> init_pg_schemas >> create_raw_tables >> create_dds_tables
     [create_raw_tables, create_dds_tables] >> create_neo4j_constraints
+    create_ch_database >> create_ch_tables
