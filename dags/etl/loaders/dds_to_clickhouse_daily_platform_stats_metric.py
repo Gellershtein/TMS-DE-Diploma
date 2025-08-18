@@ -31,7 +31,9 @@ def upsert_daily_platform_stats(as_of_date: dt.date = None):
         float(metrics["interactions_per_post"] or 0.0),
         int(metrics["dau"] or 0),
         int(metrics["wau"] or 0),
+        int(metrics["mau"] or 0),
         float(metrics["dau_wau_ratio"] or 0.0),
+        float(metrics["wau_mau_ratio"] or 0.0),
     )
 
     ch_cfg = get_clickhouse_config()
@@ -42,16 +44,16 @@ def upsert_daily_platform_stats(as_of_date: dt.date = None):
 
     # простая идемпотентность: удалим строку за дату и вставим новую
     delete_dt = metrics["dt"]
-    delete_sql = load_sql("delete_daily_platform_stats.sql", layer="dml", subdir="data_mart"),
+    delete_sql = load_sql("delete_daily_platform_stats.sql", layer="dml", subdir="data_mart")
     if isinstance(delete_dt, str):
         delete_dt = dt.date.fromisoformat(delete_dt)
-    client.executeљ(
+    client.execute(
         delete_sql,
         params={"dt": delete_dt}
     )
 
     # ClickHouse асинхронно мутирует, но для простоты вставим сразу
-    insert_sql = load_sql("insert_daily_platform_stats.sql", layer="dml", subdir="data_mart"),
+    insert_sql = load_sql("insert_daily_platform_stats.sql", layer="dml", subdir="data_mart")
     client.execute(
         insert_sql,
         [values]

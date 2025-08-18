@@ -7,16 +7,8 @@ INSERT INTO data_mart.daily_platform_stats
     interactions_per_post,
     dau,
     wau,
-    dau_wau_ratio
+    mau,
+    dau_wau_ratio,
+    wau_mau_ratio
 )
 VALUES
-(
-    %(dt)s,
-    %(total_posts)s,
-    %(total_comments)s,
-    %(total_reactions)s,
-    %(interactions_per_post)s,
-    %(dau)s,
-    %(wau)s,
-    %(dau_wau_ratio)s
-);

@@ -7,7 +7,10 @@ CREATE TABLE IF NOT EXISTS data_mart.daily_platform_stats
     interactions_per_post Float64,
     dau UInt64,
     wau UInt64,
-    dau_wau_ratio Float64
+    mau UInt64,
+    dau_wau_ratio Float64,
+    wau_mau_ratio Float64
 )
-ENGINE = ReplacingMergeTree
-ORDER BY dt;
+ENGINE = MergeTree
+PARTITION BY toYYYYMM(dt)
+ORDER BY (dt);

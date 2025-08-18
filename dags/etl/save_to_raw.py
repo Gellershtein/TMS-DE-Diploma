@@ -3,29 +3,46 @@ import json
 from etl.config import get_postgres_config
 from etl.loaders.load_sql import load_sql
 
+_sql_cache = {}
+_sql_map = {
+    "user": "insert_raw_user.sql",
+    "post": "insert_raw_post.sql",
+    "comment": "insert_raw_comment.sql",
+    "like": "insert_raw_like.sql",
+    "reaction": "insert_raw_reaction.sql",
+    "community": "insert_raw_community.sql",
+    "media": "insert_raw_media.sql",
+    "pinned_post": "insert_raw_pinned_post.sql",
+    "friend": "insert_raw_friend.sql",
+    "group_member": "insert_raw_group_member.sql",
+}
+
+def _get_sql(event_type):
+    fname = _sql_map[event_type]
+    if fname not in _sql_cache:
+        # поправь layer/subdir под свою структуру, если нужно
+        _sql_cache[fname] = load_sql(fname, layer="dml", subdir="raw")
+    return _sql_cache[fname]
+
 def save_to_raw(event, event_type):
-    config = get_postgres_config()
-    conn = psycopg2.connect(**config)
-    cur = conn.cursor()
-    sql_map = {
-        "user": "insert_raw_user.sql",
-        "post": "insert_raw_post.sql",
-        "comment": "insert_raw_comment.sql",
-        "like": "insert_raw_like.sql",
-        "reaction": "insert_raw_reaction.sql",
-        "community": "insert_raw_community.sql",
-        "media": "insert_raw_media.sql",
-        "pinned_post": "insert_raw_pinned_post.sql",
-        "friend": "insert_raw_friend.sql",
-        "group_member": "insert_raw_group_member.sql"
-    }
-    if event_type not in sql_map:
-        print(f"[WARN] Unknown event type for RAW: {event_type}")
-        cur.close()
-        conn.close()
+    cfg = get_postgres_config()
+    with psycopg2.connect(**cfg) as conn, conn.cursor() as cur:
+        if event_type not in _sql_map:
+            print(f"[WARN] Unknown event type for RAW: {event_type}")
+            return
+        sql = _get_sql(event_type)
+        cur.execute(sql, {"event_json": json.dumps(event)})
+
+def save_to_raw_bulk(event_type, events, cur):
+    """
+    Быстрый путь: одна подготовленная вставка + executemany.
+    SQL из твоих файлов остаётся прежним, параметр один: event_json.
+    """
+    if not events:
         return
-    sql = load_sql(sql_map[event_type])
-    cur.execute(sql, {"event_json": json.dumps(event)})
-    conn.commit()
-    cur.close()
-    conn.close()
+    if event_type not in _sql_map:
+        print(f"[WARN] Unknown event type for RAW: {event_type}")
+        return
+    sql = _get_sql(event_type)
+    params = [{"event_json": json.dumps(e)} for e in events]
+    cur.executemany(sql, params)

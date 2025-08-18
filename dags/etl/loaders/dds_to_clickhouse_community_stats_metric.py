@@ -1,0 +1,35 @@
+import datetime as dt
+import psycopg2
+from clickhouse_driver import Client
+
+from etl.config import get_postgres_config, get_clickhouse_config
+from etl.loaders.load_sql import load_sql
+
+def _fetch_rows_from_pg(as_of_date: dt.date):
+    sql = load_sql("select_community_stats.sql", layer="dql", subdir="data_mart")
+    pg = get_postgres_config()
+    with psycopg2.connect(**pg) as conn, conn.cursor() as cur:
+        cur.execute(sql, {"as_of_date": as_of_date})
+        rows = cur.fetchall()
+    return rows  # [(dt, group_id, new_members, posts, comments, reactions), ...]
+
+def upsert_community_stats(as_of_date: dt.date = None):
+    if as_of_date is None:
+        as_of_date = dt.date.today()
+
+    rows = _fetch_rows_from_pg(as_of_date)
+
+    ch = get_clickhouse_config()
+    client = Client(host=ch["host"], port=int(ch["port"]),
+                    user=ch["user"], password=ch["password"],
+                    database=ch["database"])
+
+    client.execute("ALTER TABLE data_mart.community_daily_stats DELETE WHERE dt = %(dt)s",
+                   params={"dt": as_of_date})
+    if rows:
+        client.execute(
+            "INSERT INTO data_mart.community_daily_stats (dt, community_id, new_members, posts, comments, reactions) VALUES",
+            rows
+        )
+    client.disconnect()
+    print(f"[CH] community_daily_stats upserted for {as_of_date}, rows={len(rows)}")

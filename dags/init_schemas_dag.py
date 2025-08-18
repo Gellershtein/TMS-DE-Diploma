@@ -6,15 +6,17 @@ from dags.etl.init_schemas_postgres import run_sql_files
 from dags.etl.init_schemas_neo4j import run_cypher_files
 from dags.etl.create_database import create_pg_database, create_clickhouse_database
 from dags.etl.init_schemas_clickhouse import run_ch_sql_folder
+from dags.etl.utils.telegram_notifier import telegram_notifier
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 default_args = {
-    'start_date': datetime(2024, 7, 29)
+    'start_date': datetime(2024, 7, 29),
+    "on_failure_callback": telegram_notifier
 }
 
 with DAG(
-    dag_id='INIT_POSTGRES_NEO4J_CLICKHOUSE_schemas',
+    dag_id='0_INIT_POSTGRES_NEO4J_CLICKHOUSE_schemas',
     schedule_interval=None,
     catchup=False,
     default_args=default_args,
