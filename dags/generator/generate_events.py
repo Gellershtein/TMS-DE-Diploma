@@ -1,11 +1,13 @@
-from datetime import datetime, date, time, timedelta
 import random
-from generators import (
+from datetime import datetime, date, time, timedelta
+
+from .generators import (
     generate_user, generate_friend, generate_post, generate_comment,
     generate_like, generate_reaction, generate_community, generate_group_member,
     generate_media, generate_pinned_post
 )
-from writer import write_to_kafka, write_to_minio
+from .writer import write_to_kafka, write_to_minio
+
 
 def _rand_dt_in_window(start_dt: datetime, end_dt: datetime) -> datetime:
     delta = int((end_dt - start_dt).total_seconds())

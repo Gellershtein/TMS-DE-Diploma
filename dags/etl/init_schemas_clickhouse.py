@@ -1,7 +1,10 @@
 import os
+
 from clickhouse_driver import Client
+
 from dags.etl.config import get_clickhouse_config
-from etl.loaders.load_sql import load_sql  # <-- твой уже существующий
+from dags.etl.loaders_utils.load_sql import load_sql
+
 
 def _client():
     ch = get_clickhouse_config()

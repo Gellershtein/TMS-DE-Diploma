@@ -1,15 +1,17 @@
-import json, time
+import json
+import time
 from collections import defaultdict
-from kafka import KafkaConsumer
+
 import psycopg2
+from kafka import KafkaConsumer
 from minio import Minio
 
-from etl.save_to_raw import save_to_raw, save_to_raw_bulk
-from etl.config import (
+from dags.etl.config import (
     get_kafka_bootstrap_servers,
     get_minio_endpoint, get_minio_access_key, get_minio_secret_key,
     get_minio_bucket, get_minio_use_ssl, get_postgres_config
 )
+from dags.etl.save_to_raw import save_to_raw, save_to_raw_bulk
 
 RAW_ENTITY_TYPES = {
     "user", "post", "comment", "like", "reaction",

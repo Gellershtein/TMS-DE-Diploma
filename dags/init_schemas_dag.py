@@ -1,11 +1,13 @@
+import os
+from datetime import datetime
+
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from datetime import datetime
-import os
-from dags.etl.init_schemas_postgres import run_sql_files
-from dags.etl.init_schemas_neo4j import run_cypher_files
+
 from dags.etl.create_database import create_pg_database, create_clickhouse_database
 from dags.etl.init_schemas_clickhouse import run_ch_sql_folder
+from dags.etl.init_schemas_neo4j import run_cypher_files
+from dags.etl.init_schemas_postgres import run_sql_files
 from dags.etl.utils.telegram_notifier import telegram_notifier
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

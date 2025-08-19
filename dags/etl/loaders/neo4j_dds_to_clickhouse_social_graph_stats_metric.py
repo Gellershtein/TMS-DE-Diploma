@@ -1,10 +1,12 @@
 import datetime as dt
 from datetime import timezone, time
-from neo4j import GraphDatabase
-from clickhouse_driver import Client
 
-from etl.config import get_neo4j_config, get_clickhouse_config
-from etl.loaders.load_cypher import load_cypher
+from clickhouse_driver import Client
+from neo4j import GraphDatabase
+
+from dags.etl.config import get_neo4j_config, get_clickhouse_config
+from dags.etl.loaders_utils.load_cypher import load_cypher
+
 
 def _to_date(as_date):
     if isinstance(as_date, dt.date):

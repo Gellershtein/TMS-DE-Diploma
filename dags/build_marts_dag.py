@@ -1,10 +1,11 @@
-from airflow import DAG
-from airflow.operators.python import PythonOperator
 from datetime import datetime
 
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+
+from dags.etl.loaders.dds_to_clickhouse_community_stats_metric import upsert_community_stats
 from dags.etl.loaders.dds_to_clickhouse_daily_platform_stats_metric import upsert_daily_platform_stats
 from dags.etl.loaders.neo4j_dds_to_clickhouse_social_graph_stats_metric import upsert_social_graph_stats
-from dags.etl.loaders.dds_to_clickhouse_community_stats_metric import upsert_community_stats
 from dags.etl.utils.telegram_notifier import telegram_notifier
 
 default_args = {

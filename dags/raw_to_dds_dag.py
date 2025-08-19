@@ -1,7 +1,9 @@
+from datetime import datetime, timedelta
+
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from datetime import datetime, timedelta
-from etl.loaders.raw_to_dds import process_raw_entity
+
+from dags.etl.loaders.raw_to_dds import process_raw_entity
 from dags.etl.utils.telegram_notifier import telegram_notifier
 
 default_args = {

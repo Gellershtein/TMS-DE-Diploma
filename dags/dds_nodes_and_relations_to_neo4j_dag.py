@@ -1,9 +1,10 @@
-from airflow import DAG
-from airflow.operators.python import PythonOperator
 from datetime import datetime
 
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+
+from dags.etl.loaders.dds_to_neo4j_nodes import copy_nodes_to_neo4j
 from dags.etl.loaders.dds_to_neo4j_relations import copy_all_relations
-from etl.loaders.dds_to_neo4j_nodes import copy_nodes_to_neo4j
 from dags.etl.utils.telegram_notifier import telegram_notifier
 
 default_args = {

@@ -1,7 +1,8 @@
 import psycopg2
-from data_generator.models import User, Friend, Post, Comment, Like, Reaction, Community, GroupMember, Media, PinnedPost
-from etl.loaders.save_to_dds import save_to_dds
-from etl.config import get_postgres_config
+
+from dags.etl.config import get_postgres_config
+from dags.etl.save_to_dds import save_to_dds
+from dags.generator.models import User, Friend, Post, Comment, Like, Reaction, Community, GroupMember, Media, PinnedPost
 
 # Маппинг: сущность → Pydantic модель → таблица
 

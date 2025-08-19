@@ -1,12 +1,11 @@
-from airflow import DAG
-from airflow.operators.python import PythonOperator
-from airflow.operators.bash import BashOperator
 from datetime import datetime, timedelta
-import os, sys
-from dags.etl.utils.telegram_notifier import telegram_notifier
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "data_generator"))
-from generate_events import generate_to_kafka, generate_to_minio, generate_all_data_and_return
+from airflow import DAG
+from airflow.operators.bash import BashOperator
+from airflow.operators.python import PythonOperator
+
+from dags.etl.utils.telegram_notifier import telegram_notifier
+from dags.generator.generate_events import generate_to_kafka, generate_to_minio, generate_all_data_and_return
 
 default_args = {"owner": "airflow", "retries": 3, "retry_delay": timedelta(seconds=30),"on_failure_callback": telegram_notifier}
 

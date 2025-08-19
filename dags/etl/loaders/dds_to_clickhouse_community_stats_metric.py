@@ -1,9 +1,11 @@
 import datetime as dt
+
 import psycopg2
 from clickhouse_driver import Client
 
-from etl.config import get_postgres_config, get_clickhouse_config
-from etl.loaders.load_sql import load_sql
+from dags.etl.config import get_postgres_config, get_clickhouse_config
+from dags.etl.loaders_utils.load_sql import load_sql
+
 
 def _fetch_rows_from_pg(as_of_date: dt.date):
     sql = load_sql("select_community_stats.sql", layer="dql", subdir="data_mart")

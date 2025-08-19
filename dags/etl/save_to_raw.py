@@ -1,7 +1,9 @@
-import psycopg2
 import json
-from etl.config import get_postgres_config
-from etl.loaders.load_sql import load_sql
+
+import psycopg2
+
+from dags.etl.config import get_postgres_config
+from dags.etl.loaders_utils.load_sql import load_sql
 
 _sql_cache = {}
 _sql_map = {

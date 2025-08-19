@@ -1,7 +1,9 @@
 import os
+
 import psycopg2
 from clickhouse_driver import Client
 from etl.config import get_postgres_config, get_clickhouse_config
+
 
 def create_pg_database(db_name=os.environ.get("POSTGRES_DB")):
     config = get_postgres_config()

@@ -1,6 +1,9 @@
 import os
+
 import psycopg2
+
 from dags.etl.config import get_postgres_config
+
 
 def run_sql_files(folder_or_file):
     config = get_postgres_config()

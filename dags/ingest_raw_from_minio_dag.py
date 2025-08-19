@@ -1,7 +1,9 @@
+from datetime import datetime, timedelta
+
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from datetime import datetime, timedelta
-from etl.ingestion import ingest_from_minio
+
+from dags.etl.ingestion import ingest_from_minio
 from dags.etl.utils.telegram_notifier import telegram_notifier
 
 default_args = {

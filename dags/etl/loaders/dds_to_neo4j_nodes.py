@@ -1,8 +1,9 @@
 import psycopg2
 from neo4j import GraphDatabase
-from etl.config import get_postgres_config, get_neo4j_config
-from etl.loaders.load_sql import load_sql
-from etl.loaders.load_cypher import load_cypher
+
+from dags.etl.config import get_postgres_config, get_neo4j_config
+from dags.etl.loaders_utils.load_cypher import load_cypher
+from dags.etl.loaders_utils.load_sql import load_sql
 
 # ENTITY_META: имя, select-скрипт, cypher-скрипт
 ENTITY_META = {

@@ -1,12 +1,13 @@
 
+import os
+import sys
+from datetime import datetime, timedelta
+
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from datetime import datetime, timedelta
-import sys
-import os
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "data_generator"))
-from generate_events import generate_to_kafka, generate_to_minio, generate_all_data_and_return
+from dags.generator.generate_events import generate_to_kafka, generate_to_minio, generate_all_data_and_return
 from dags.etl.utils.telegram_notifier import telegram_notifier
 
 default_args = {

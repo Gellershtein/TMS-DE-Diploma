@@ -1,7 +1,9 @@
-from faker import Faker
-from datetime import datetime
 import random
-from models import User, Friend, Post, Comment, Like, Reaction, Community, GroupMember, Media, PinnedPost
+from datetime import datetime
+
+from faker import Faker
+
+from .models import User, Friend, Post, Comment, Like, Reaction, Community, GroupMember, Media, PinnedPost
 
 faker = Faker()
 

@@ -1,6 +1,7 @@
-import os
 import logging
+import os
 from html import escape
+
 import requests
 
 log = logging.getLogger(__name__)
