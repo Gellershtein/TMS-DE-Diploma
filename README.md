@@ -3,19 +3,19 @@
   <p align="left">
   <!-- стэк -->
   <a href="https://www.python.org/">
-    <img alt="Python" src="https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white">
+    <img alt="Python" src="https://img.shields.io/badge/Python-3.13+-3776AB?logo=python&logoColor=white">
   </a>
   <a href="https://airflow.apache.org/">
     <img alt="Airflow" src="https://img.shields.io/badge/Airflow-2.8-017CEE?logo=apacheairflow&logoColor=white">
   </a>
   <a href="https://www.postgresql.org/">
-    <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-14+-336791?logo=postgresql&logoColor=white">
+    <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-13+-336791?logo=postgresql&logoColor=white">
   </a>
   <a href="https://clickhouse.com/">
-    <img alt="ClickHouse" src="https://img.shields.io/badge/ClickHouse-24.x-FFCC01?logo=clickhouse&logoColor=black">
+    <img alt="ClickHouse" src="https://img.shields.io/badge/ClickHouse-25.x-FFCC01?logo=clickhouse&logoColor=black">
   </a>
   <a href="https://kafka.apache.org/">
-    <img alt="Kafka" src="https://img.shields.io/badge/Kafka-3.x-231F20?logo=apachekafka&logoColor=white">
+    <img alt="Kafka" src="https://img.shields.io/badge/Kafka-7.5+-231F20?logo=apachekafka&logoColor=white">
   </a>
   <a href="https://min.io/">
     <img alt="MinIO" src="https://img.shields.io/badge/MinIO-S3%20compatible-C72E49?logo=minio&logoColor=white">
@@ -24,7 +24,7 @@
     <img alt="Neo4j" src="https://img.shields.io/badge/Neo4j-5.x-018BFF?logo=neo4j&logoColor=white">
   </a>
   <a href="https://www.metabase.com/">
-    <img alt="Metabase" src="https://img.shields.io/badge/Metabase-0.49+-509EE3?logo=metabase&logoColor=white">
+    <img alt="Metabase" src="https://img.shields.io/badge/Metabase-0.55+-509EE3?logo=metabase&logoColor=white">
   </a>
   <!-- общее -->
   <a href="#">
