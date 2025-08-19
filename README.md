@@ -30,10 +30,6 @@
   <a href="#">
     <img alt="License" src="https://img.shields.io/badge/License-MIT-2ea44f">
   </a>
-  <a href="#">
-    <img alt="PRs welcome" src="https://img.shields.io/badge/PRs-welcome-ff69b4">
-  </a>
-</p>
 
 # Социальная аналитика: DWH/ETL-пайплайн пользовательских событий  
   
