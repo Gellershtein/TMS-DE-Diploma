@@ -64,13 +64,15 @@ def get_neo4j_config():
 
 def get_clickhouse_config():
     host = os.environ.get("CLICKHOUSE_HOST")
+    port = os.environ.get("CLICKHOUSE_PORT")
     user = os.environ.get("CLICKHOUSE_USER")
     password = os.environ.get("CLICKHOUSE_PASSWORD")
     database = os.environ.get("CLICKHOUSE_DB")
-    if not all([host, user, password, database]):
+    if not all([host, port, user, password, database]):
         raise RuntimeError("One or more ClickHouse env vars are not set")
     return {
         "host": host,
+        "port": int(port),
         "user": user,
         "password": password,
         "database": database,

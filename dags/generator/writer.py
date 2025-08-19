@@ -1,7 +1,10 @@
-import json
 import io
+import json
 
-from config import (
+from kafka import KafkaProducer
+from minio import Minio
+
+from .config import (
     get_kafka_bootstrap_servers,
     get_minio_endpoint,
     get_minio_access_key,
@@ -10,8 +13,6 @@ from config import (
     get_minio_use_ssl,
 )
 
-from kafka import KafkaProducer
-from minio import Minio
 
 def write_to_kafka(topic, event):
     producer = KafkaProducer(

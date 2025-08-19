@@ -1,6 +1,9 @@
 import os
+
 from neo4j import GraphDatabase
+
 from dags.etl.config import get_neo4j_config
+
 
 def run_cypher_files(folder):
     cfg = get_neo4j_config()
