@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from textwrap import dedent
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
@@ -19,6 +20,13 @@ default_args = {
 
 with DAG(
     dag_id='0_INIT_POSTGRES_NEO4J_CLICKHOUSE_schemas',
+    description="Инициализация БД/схем и таблиц в Postgres, Neo4j и ClickHouse. Запускать один раз после поднятия окружения.",
+    doc_md=dedent("""
+    ### Что делает DAG
+    - Создаёт БД DWH в Postgres, схемы RAW/DDS, таблицы и индексы.
+    - Создаёт констрейнты/индексы в Neo4j.
+    - Создаёт БД/таблицы витрин в ClickHouse.
+    """),
     schedule_interval=None,
     catchup=False,
     default_args=default_args,
