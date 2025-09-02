@@ -1,9 +1,11 @@
+import logging
 import os
 
 import psycopg2
 from clickhouse_driver import Client
 from etl.config import get_postgres_config, get_clickhouse_config
 
+logger = logging.getLogger(__name__)
 
 def create_pg_database(db_name=os.environ.get("POSTGRES_DB")):
     config = get_postgres_config()
@@ -17,9 +19,9 @@ def create_pg_database(db_name=os.environ.get("POSTGRES_DB")):
 
     if not exists:
         cur.execute(f"CREATE DATABASE {db_name};")
-        print(f"[PG] Database '{db_name}' created")
+        logger.info(f"[PG] Database '{db_name}' created")
     else:
-        print(f"[PG] Database '{db_name}' already exists")
+        logger.info(f"[PG] Database '{db_name}' already exists")
     cur.close()
     conn.close()
 
@@ -28,4 +30,4 @@ def create_clickhouse_database(db_name=os.environ.get("CLICKHOUSE_DB")):
     config["database"] = "default"
     client = Client(**config)
     client.execute(f"CREATE DATABASE IF NOT EXISTS {db_name};")
-    print(f"[CH] Database ensured: {db_name}")
+    logger.info(f"[CH] Database ensured: {db_name}")

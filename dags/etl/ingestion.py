@@ -1,6 +1,8 @@
 import json
+import logging
 import time
 from collections import defaultdict
+from typing import Dict, List, Any, Iterable
 
 import psycopg2
 from kafka import KafkaConsumer
@@ -11,17 +13,32 @@ from dags.etl.config import (
     get_minio_endpoint, get_minio_access_key, get_minio_secret_key,
     get_minio_bucket, get_minio_use_ssl, get_postgres_config
 )
-from dags.etl.save_to_raw import save_to_raw, save_to_raw_bulk
+from dags.etl.save_to_raw import (
+    save_to_raw_bulk,
+    is_object_processed,
+    mark_object_processed,
+)
+
+logger = logging.getLogger(__name__)
 
 RAW_ENTITY_TYPES = {
     "user", "post", "comment", "like", "reaction",
     "community", "media", "pinned_post", "friend", "group_member"
 }
 
-def ingest_from_kafka_topics(topics, batch_size=2000, flush_sec=5, idle_sec=8, group_id="raw-loader"):
+
+# -------- Kafka --------
+
+def ingest_from_kafka_topics(
+    topics: Iterable[str],
+    batch_size: int = 2000,
+    flush_sec: int = 5,
+    idle_sec: int = 8,
+    group_id: str = "raw-loader",
+) -> None:
     """
-    Читает один или несколько топиков, буферизует события по типу, пишет батчами в RAW
-    и коммитит оффсеты после успешной записи.
+    Читает один/несколько топиков Kafka, буферизует события по типу,
+    пишет батчами в RAW.* и коммитит оффсеты только после успешной записи.
     Завершается, если нет новых сообщений idle_sec секунд.
     """
     consumer = KafkaConsumer(
@@ -41,27 +58,31 @@ def ingest_from_kafka_topics(topics, batch_size=2000, flush_sec=5, idle_sec=8, g
     conn = psycopg2.connect(**pg)
     cur = conn.cursor()
 
-    buffers = defaultdict(list)
+    buffers: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
     last_flush = time.time()
     last_seen = time.time()
 
     def flush():
-        # батчевые вставки по типу события
+        total = 0
         for etype, rows in list(buffers.items()):
             if not rows:
                 continue
             if etype in RAW_ENTITY_TYPES:
-                save_to_raw_bulk(etype, rows, cur)   # executemany под капотом
+                save_to_raw_bulk(etype, rows, cur)
+                total += len(rows)
             buffers[etype].clear()
-        conn.commit()
-        consumer.commit()
+        if total:
+            conn.commit()
+            consumer.commit()
+            logger.info(f"[Kafka] Flushed {total} events to RAW and committed offsets")
 
     try:
+        logger.info(f"[Kafka] Start consume: topics={list(topics)}, group_id={group_id}")
         while True:
             polled = consumer.poll(timeout_ms=1000, max_records=batch_size)
             if not polled:
-                # если пусто достаточно долго — выходим; DAG запустит нас снова
                 if time.time() - last_seen > idle_sec:
+                    logger.info(f"[Kafka] Idle for {idle_sec}s → exit")
                     break
                 continue
 
@@ -87,45 +108,122 @@ def ingest_from_kafka_topics(topics, batch_size=2000, flush_sec=5, idle_sec=8, g
             conn.close()
         finally:
             consumer.close()
+        logger.info("[Kafka] Consumer closed")
 
-def ingest_from_kafka():
-    consumer = KafkaConsumer(
-        "users", "friends", "posts", "comments", "likes", "reactions",
-        "communities", "group_members", "media", "pinned_posts",
-        bootstrap_servers=get_kafka_bootstrap_servers(),
-        auto_offset_reset='earliest',
-        group_id="airflow-group",
-        value_deserializer=lambda m: json.loads(m.decode('utf-8')),
-        consumer_timeout_ms=10000,
-    )
-    for msg in consumer:
-        event = msg.value
-        event_type = event.get("type")
-        # Распределение по типам
-        if event_type in RAW_ENTITY_TYPES:
-            save_to_raw(event, event_type)
+# -------- MinIO --------
 
-def ingest_from_minio():
-    minio_client = Minio(
+def _parse_minio_payload(data: bytes) -> List[Dict[str, Any]]:
+    """
+    Пытается разобрать содержимое файла:
+    - JSON-объект → [obj]
+    - JSON-массив → list
+    - JSON Lines → построчно
+    """
+    try:
+        obj = json.loads(data)
+        if isinstance(obj, list):
+            return obj
+        if isinstance(obj, dict):
+            return [obj]
+    except Exception:
+        pass
+
+    # JSONL fallback
+    events: List[Dict[str, Any]] = []
+    for line in data.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            events.append(json.loads(line))
+        except Exception:
+            logger.warning("Skip invalid JSONL line")
+    return events
+
+
+def ingest_from_minio(prefix: str = "", recursive: bool = True, batch_size: int = 1000) -> None:
+    """
+    Читает батчи из MinIO и пишет в RAW.*.
+    Объекты НЕ удаляются. Вместо этого, в raw.processed_objects ставится отметка,
+    чтобы не обрабатывать повторно.
+    """
+    client = Minio(
         get_minio_endpoint(),
         access_key=get_minio_access_key(),
         secret_key=get_minio_secret_key(),
         secure=get_minio_use_ssl(),
     )
     bucket = get_minio_bucket()
-    for obj in minio_client.list_objects(bucket, recursive=True):
-        data = minio_client.get_object(bucket, obj.object_name).read()
-        try:
-            events = json.loads(data)
-            # Для файла, который содержит список событий, а не одно событие
-            if isinstance(events, dict):  # если вдруг объект — одно событие
-                events = [events]
-        except Exception as e:
-            print(f"Ошибка при парсинге файла {obj.object_name}: {e}")
-            continue
-        for event in events:
-            event_type = event.get("type")
-            if event_type in RAW_ENTITY_TYPES:
-                save_to_raw(event, event_type)
-        # (опционально) удалять объект после обработки:
-        minio_client.remove_object(bucket, obj.object_name)
+
+    pg = get_postgres_config()
+    conn = psycopg2.connect(**pg)
+    cur = conn.cursor()
+
+    processed = 0
+    skipped = 0
+
+    try:
+        logger.info(f"[MinIO] Scan bucket={bucket} prefix='{prefix}' recursive={recursive}")
+        for obj in client.list_objects(bucket, prefix=prefix, recursive=recursive):
+            key = obj.object_name
+
+            # проверяем - уже обработан?
+            if is_object_processed("minio", key, cur):
+                skipped += 1
+                if skipped % 100 == 0:
+                    logger.info(f"[MinIO] Skipped {skipped} already processed objects so far")
+                continue
+
+            # читаем и парсим
+            try:
+                data = client.get_object(bucket, key).read()
+            except Exception as e:
+                logger.error(f"[MinIO] Failed to read object {key}: {e}")
+                continue
+
+            events = _parse_minio_payload(data)
+            if not events:
+                logger.warning(f"[MinIO] Empty or unparsable object: {key}")
+                continue
+
+            # группируем по типам и вставляем батчами
+            grouped: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+            for ev in events:
+                etype = ev.get("type")
+                if etype in RAW_ENTITY_TYPES:
+                    grouped[etype].append(ev)
+
+            total_rows = 0
+            for etype, rows in grouped.items():
+                if not rows:
+                    continue
+                if len(rows) <= batch_size:
+                    save_to_raw_bulk(etype, rows, cur)
+                    total_rows += len(rows)
+                else:
+                    # режем на чанки, чтобы держать память под контролем
+                    for i in range(0, len(rows), batch_size):
+                        chunk = rows[i : i + batch_size]
+                        save_to_raw_bulk(etype, chunk, cur)
+                        total_rows += len(chunk)
+
+            # коммитим вставки
+            conn.commit()
+
+            # достаём etag и помечаем как обработанный
+            try:
+                st = client.stat_object(bucket, key)
+                etag = getattr(st, "etag", None)
+            except Exception:
+                etag = None
+
+            mark_object_processed("minio", key, etag, cur)
+            conn.commit()
+
+            processed += 1
+            logger.info(f"[MinIO] Processed object: {key}, events={len(events)}, rows_inserted={total_rows}")
+
+        logger.info(f"[MinIO] Done. processed={processed}, skipped={skipped}")
+    finally:
+        cur.close()
+        conn.close()

@@ -1,7 +1,7 @@
-
 import os
 import sys
 from datetime import datetime, timedelta
+from textwrap import dedent
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
@@ -18,7 +18,14 @@ default_args = {
 }
 
 with DAG(
-    dag_id="1_DATA_GENERATOR_to_kafka_and_minio",
+    dag_id="1_DATA_GENERATOR_to_kafka_and_minio_each_minute",
+    description="Генерация исторических/стриминговых данных (Faker) → Kafka и MinIO (батчи) каждую минуту",
+    doc_md=dedent("""
+    ### Что делает DAG
+    - Генерирует данные пользователей/посты/комменты/реакции/дружбу/сообщества каждую минуту.
+    - Пишет в Kafka топики и складывает батчи JSON в MinIO под датированными именами.
+    - Нежелательно использовать для backfill.
+    """),
     default_args=default_args,
     schedule_interval="* * * * *", #генерируем данные каждую минуту
     start_date=datetime(2024, 7, 1),

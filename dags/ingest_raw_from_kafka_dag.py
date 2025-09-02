@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from textwrap import dedent
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
@@ -18,12 +19,19 @@ LIGHT = ["users", "friends", "communities", "group_members", "media", "pinned_po
 
 with DAG(
     dag_id="2_INGEST_RAW_FROM_KAFKA",
+    description="Потоковый ingest из Kafka в RAW (Postgres) батчами с ручным коммитом оффсетов.",
+    doc_md=dedent("""
+    ### Что делает DAG
+    - Читает из топиков users/friends/posts/... с буферизацией.
+    - Вставляет в RAW.* батчами, после успешного коммита — фиксирует оффсеты.
+    - Настраивается по batch_size/flush_sec/idle_sec.
+    """),
     default_args=default_args,
     start_date=datetime(2024, 7, 29),
     schedule_interval="*/5 * * * *",  # каждые 5 минуты (чтобы дать времени на догон)
     catchup=False,
     max_active_runs=2,                 # один запуск DAG одновременно
-    tags=["diploma", "raw", "ingest", "kafka"],
+    tags=["raw", "ingest", "kafka"],
 ) as dag:
 
     # тяжёлые топики — отдельные воркеры (делят партиции)

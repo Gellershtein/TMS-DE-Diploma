@@ -1,9 +1,13 @@
+import logging
+
 import psycopg2
 from neo4j import GraphDatabase
 
 from dags.etl.config import get_postgres_config, get_neo4j_config
 from dags.etl.loaders_utils.load_cypher import load_cypher
 from dags.etl.loaders_utils.load_sql import load_sql
+
+logger = logging.getLogger(__name__)
 
 ENTITY_META = {
     "friend": {
@@ -58,11 +62,11 @@ def copy_relation_to_neo4j(entity):
     with driver.session() as session:
         for row in rows:
             params = dict(zip(columns, row))
-            print(params)
+            logger.debug(params)
             session.run(cypher, **params)
     driver.close()
 
 def copy_all_relations():
     for entity in ENTITY_META:
-        print(f"[INFO] Copying {entity}...")
+        logger.info(f"[INFO] Copying {entity}...")
         copy_relation_to_neo4j(entity)

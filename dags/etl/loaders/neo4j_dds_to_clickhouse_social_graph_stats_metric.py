@@ -1,4 +1,5 @@
 import datetime as dt
+import logging
 from datetime import timezone, time
 
 from clickhouse_driver import Client
@@ -7,6 +8,7 @@ from neo4j import GraphDatabase
 from dags.etl.config import get_neo4j_config, get_clickhouse_config
 from dags.etl.loaders_utils.load_cypher import load_cypher
 
+logger = logging.getLogger(__name__)
 
 def _to_date(as_date):
     if isinstance(as_date, dt.date):
@@ -66,9 +68,11 @@ def upsert_social_graph_stats(as_of_date: dt.date = None):
                     user=ch["user"], password=ch["password"],
                     database=ch["database"])
 
-    print("[NEO] cutoff=", as_of_date)
-    print("[NEO] summary=", summary)
-    print("[NEO] degrees_n=", len(degrees))
+    logger.debug(
+        f"[NEO] cutoff={as_of_date}\n"
+        f"[NEO] summary={summary}\n"
+        f"[NEO] degrees_n={len(degrees)}"
+    )
 
     # 1) summary
     client.execute(
@@ -96,4 +100,4 @@ def upsert_social_graph_stats(as_of_date: dt.date = None):
         )
 
     client.disconnect()
-    print(f"[CH] social_graph_stats + social_user_centrality upserted for {as_of_date}")
+    logger.info(f"[CH] social_graph_stats + social_user_centrality upserted for {as_of_date}")

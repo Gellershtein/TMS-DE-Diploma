@@ -1,4 +1,5 @@
 from datetime import datetime
+from textwrap import dedent
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
@@ -11,12 +12,21 @@ from dags.etl.utils.telegram_notifier import telegram_notifier
 default_args = {
     "owner": "airflow",
     "retries": 3,
-    "on_failure_callback": telegram_notifier
+    "on_failure_callback": telegram_notifier,
+    "pool": "postgres_dwh",
+    "pool_slots": 1,
 }
 
 
 with DAG(
     dag_id="5_BUILD_MARTS_TO_CLICKHOUSE",
+    description="Расчёт агрегатов (DAU/WAU/MAU, сообщества, граф) и загрузка витрин в ClickHouse.",
+    doc_md=dedent("""
+    ### Что делает DAG
+    - Считает метрики платформы (окна [d0,d1), [w0,d1), [m0,d1)).
+    - Строит суточную статистику по сообществам.
+    - Выгружает summary графа и degree centrality из Neo4j.
+    """),
     schedule_interval="@daily",
     start_date=datetime(2024, 7, 1),
     catchup=True,
@@ -28,8 +38,7 @@ with DAG(
     dm_daily = PythonOperator(
         task_id="dm_daily_platform_stats",
         python_callable=upsert_daily_platform_stats,
-        op_kwargs={"as_of_date": "{{ ds }}"},
-        pool="postgres_dwh"
+        op_kwargs={"as_of_date": "{{ ds }}"}
     )
 
     dm_social = PythonOperator(
@@ -45,8 +54,7 @@ with DAG(
     dm_comm = PythonOperator(
         task_id="dm_community_stats",
         python_callable=upsert_community_stats,
-        op_kwargs={"as_of_date": "{{ ds }}"},
-        pool="postgres_dwh"
+        op_kwargs={"as_of_date": "{{ ds }}"}
     )
 
 dm_daily >> dm_comm

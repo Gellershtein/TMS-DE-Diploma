@@ -1,4 +1,5 @@
 import datetime as dt
+import logging
 
 import psycopg2
 from clickhouse_driver import Client
@@ -6,6 +7,7 @@ from clickhouse_driver import Client
 from dags.etl.config import get_postgres_config, get_clickhouse_config
 from dags.etl.loaders_utils.load_sql import load_sql
 
+logger = logging.getLogger(__name__)
 
 def _fetch_rows_from_pg(as_of_date: dt.date):
     sql = load_sql("select_community_stats.sql", layer="dql", subdir="data_mart")
@@ -34,4 +36,4 @@ def upsert_community_stats(as_of_date: dt.date = None):
             rows
         )
     client.disconnect()
-    print(f"[CH] community_daily_stats upserted for {as_of_date}, rows={len(rows)}")
+    logger.info(f"[CH] community_daily_stats upserted for {as_of_date}, rows={len(rows)}")

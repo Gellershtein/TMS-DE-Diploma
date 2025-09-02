@@ -1,4 +1,5 @@
 from datetime import datetime
+from textwrap import dedent
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
@@ -15,6 +16,13 @@ default_args = {
 
 with DAG(
     dag_id="4_DDS_to_NEO4J_dag",
+    description="Материализация графа в Neo4j (узлы/связи) из DDS, идемпотентные MERGE.",
+    doc_md=dedent("""
+    ### Что делает DAG
+    - Создаёт (:User), (:Post), (:Comment), (:Community), (:Media) и связи (:FRIENDS_WITH), (:POSTED), (:COMMENTED) и т.д.
+    - Использует MERGE + уникальные констрейнты.
+    - Годится для расчёта графовых метрик.
+    """),
     default_args=default_args,
     schedule_interval="*/5 * * * *",
     start_date=datetime(2024, 7, 30),
