@@ -61,6 +61,9 @@ x-airflow-common:
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
+    AIRFLOW__CORE__PARALLELISM: "16"
+    AIRFLOW__CORE__DAG_CONCURRENCY: "8"
+    AIRFLOW__CELERY__WORKER_CONCURRENCY: "4"
     # yamllint disable rule:line-length
     # Use simple http server on scheduler for health checks
     # See https://airflow.apache.org/docs/apache-airflow/stable/administration-and-deployment/logging-monitoring/check-health.html#scheduler-health-check-server
@@ -80,6 +83,8 @@ x-airflow-common:
     NEO4J_URI: ${NEO4J_URI}
     NEO4J_USER: ${NEO4J_USER}
     NEO4J_PASSWORD: ${NEO4J_PASSWORD}
+    CLICKHOUSE_HOST: ${CLICKHOUSE_HOST}
+    CLICKHOUSE_PORT: ${CLICKHOUSE_PORT}
     CLICKHOUSE_USER: ${CLICKHOUSE_USER}
     CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
     CLICKHOUSE_DB: ${CLICKHOUSE_DB}
@@ -87,6 +92,7 @@ x-airflow-common:
     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     POSTGRES_DB: ${POSTGRES_DB}
     POSTGRES_HOST: ${POSTGRES_HOST}
+    MB_DB_FILE: ${MB_DB_FILE}
 
   volumes:
     - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
@@ -123,7 +129,7 @@ services:
     restart: always
 
   redis:
-    image: redis:latest
+    image: redis:8.0.3
     expose:
       - 6379
     healthcheck:
@@ -135,12 +141,14 @@ services:
     restart: always
 
   clickhouse:
-    image: clickhouse/clickhouse-server:latest
+    image: clickhouse/clickhouse-server:25.6.4.12
     ulimits:
       nofile:
         soft: 262144
         hard: 262144
     environment:
+      CLICKHOUSE_HOST: ${CLICKHOUSE_HOST}
+      CLICKHOUSE_PORT: ${CLICKHOUSE_PORT}
       CLICKHOUSE_USER: ${CLICKHOUSE_USER}
       CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
       CLICKHOUSE_DB: ${CLICKHOUSE_DB}
@@ -159,28 +167,29 @@ services:
     restart: always
 
   neo4j:
-    image: neo4j:latest
+    image: neo4j:2025.06.2
     ports:
       - "7474:7474"   # Web interface
       - "7687:7687"   # Bolt protocol
     environment:
       - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
-      - NEO4J_dbms_connector_bolt_enabled=true
-      - NEO4J_dbms_connector_bolt_listen__address=:7687
-      - NEO4J_dbms_connector_bolt_advertised__address=localhost:7687
+      - NEO4J_AUTH=${NEO4J_USER}/${NEO4J_PASSWORD}
+      - NEO4J_server_default__listen__address=0.0.0.0
+      - NEO4J_server_bolt_advertised__address=localhost:7687
+      - NEO4J_server_http_advertised__address=localhost:7474
     volumes:
       - neo4j_data:/data
       - neo4j_logs:/logs
       - neo4j_import:/var/lib/neo4j/import
     healthcheck:
-      test: [ "CMD", "curl", "--fail", "http://localhost:7474" ]
+      test: ["CMD-SHELL", "echo 'RETURN 1' | cypher-shell -a bolt://localhost:7687 -u ${NEO4J_USER} -p ${NEO4J_PASSWORD} >/dev/null 2>&1 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
     restart: always
 
   minio:
-    image: minio/minio:latest
+    image: minio/minio:RELEASE.2025-07-18T21-56-31Z
     container_name: minio
     ports:
       - "9001:9001"
@@ -199,7 +208,7 @@ services:
     restart: always
 
   zookeeper:
-    image: confluentinc/cp-zookeeper:latest
+    image: confluentinc/cp-zookeeper:7.5.0
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
@@ -208,7 +217,7 @@ services:
     restart: always
 
   kafka:
-    image: confluentinc/cp-kafka:7.4.0
+    image: confluentinc/cp-kafka:7.5.0
     depends_on:
       - zookeeper
     ports:
@@ -225,7 +234,7 @@ services:
     restart: always
 
   kafka-ui:
-    image: provectuslabs/kafka-ui:latest
+    image: provectuslabs/kafka-ui:v0.7.2
     depends_on:
       - zookeeper
       - kafka
@@ -237,6 +246,21 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
       KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
     restart: always
+
+  metabase:
+    image: metabase/metabase:v0.55.10
+    container_name: metabase
+    ports:
+      - "3000:3000"
+    volumes:
+      - metabase-data:/metabase-data
+    environment:
+      MB_DB_FILE: ${MB_DB_FILE}
+    restart: always
+    depends_on:
+      - clickhouse
+      - postgres
+      - redis
 
   airflow-webserver:
     <<: *airflow-common
@@ -359,6 +383,13 @@ services:
         fi
         mkdir -p /sources/logs /sources/dags /sources/plugins
         chown -R "${AIRFLOW_UID}:0" /sources/{logs,dags,plugins}
+        /entrypoint airflow db migrate
+        /entrypoint airflow users create \
+        --username "${_AIRFLOW_WWW_USER_USERNAME}" \
+        --password "${_AIRFLOW_WWW_USER_PASSWORD}" \
+        --firstname Admin --lastname User --role Admin --email admin@example.com || true
+        /entrypoint airflow pools set postgres_dwh 4 "Shared pool for DWH Postgres"
+        /entrypoint airflow pools set neo4j 2 "Shared pool for Neo4j"
         exec /entrypoint airflow version
     # yamllint enable rule:line-length
     environment:
@@ -415,3 +446,4 @@ volumes:
   neo4j_logs:
   neo4j_import:
   minio_data:
+  metabase-data:

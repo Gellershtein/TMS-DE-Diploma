@@ -1,7 +1,9 @@
 
-from pydantic import BaseModel
-from typing import Optional
 from datetime import datetime
+from typing import Optional
+
+from pydantic import BaseModel
+
 
 class User(BaseModel):
     type: str = "user"

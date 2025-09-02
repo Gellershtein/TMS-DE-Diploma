@@ -1,6 +1,11 @@
+import logging
 import os
+
 import psycopg2
+
 from dags.etl.config import get_postgres_config
+
+logger = logging.getLogger(__name__)
 
 def run_sql_files(folder_or_file):
     config = get_postgres_config()
@@ -15,7 +20,7 @@ def run_sql_files(folder_or_file):
     for file in files:
         with open(file, encoding='utf-8') as f:
             sql = f.read()
-            print(f"Running {file}...")
+            logger.info(f"Running {file}...")
             cur.execute(sql)
     conn.commit()
     cur.close()
