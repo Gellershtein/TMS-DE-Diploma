@@ -11,6 +11,7 @@ default_args = {
     "owner": "airflow",
     "retries": 3,
     "retry_delay": timedelta(minutes=2),
+    "on_success_callback": telegram_notifier,
     "on_failure_callback": telegram_notifier
 }
 

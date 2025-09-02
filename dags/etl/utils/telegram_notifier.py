@@ -71,8 +71,9 @@ def telegram_notifier(context):
 
     if state == "success":
         msg = (
-            f"Задача <b>{escape(task_id)}</b> DAG <b>{escape(dag_id)}</b> успешно завершена.\n"
-            f"Дата выполнения: {escape(str(logical_date))}\n"
+            f"✅Задача <b><code>{escape(task_id)}</code></b>\n"
+            f"DAG <b><code>{escape(dag_id)}</code></b> успешно завершена.\n"
+            f"Дата выполнения: <code>{escape(str(logical_date))}</code>\n"
             f"Run ID: <code>{escape(str(run_id))}</code>"
         )
     else:

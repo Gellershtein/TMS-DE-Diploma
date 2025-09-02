@@ -10,7 +10,7 @@ from dags.etl.utils.telegram_notifier import telegram_notifier
 default_args = {
     "owner": "airflow",
     "retries": 3,
-    "retry_delay": timedelta(minutes=2),
+    "retry_delay": timedelta(minutes=1),
     "on_failure_callback": telegram_notifier,
 }
 
@@ -28,9 +28,9 @@ with DAG(
     """),
     default_args=default_args,
     start_date=datetime(2024, 7, 29),
-    schedule_interval="*/5 * * * *",  # каждые 5 минуты (чтобы дать времени на догон)
+    schedule_interval="*/2 * * * *",  # каждые 2 минуты (чтобы дать времени на догон)
     catchup=False,
-    max_active_runs=2,                 # один запуск DAG одновременно
+    max_active_runs=1,                 # один запуск DAG одновременно
     tags=["raw", "ingest", "kafka"],
 ) as dag:
 

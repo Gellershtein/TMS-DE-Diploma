@@ -11,6 +11,7 @@ default_args = {
     "owner": "airflow",
     "retries": 3,
     "retry_delay": timedelta(seconds=30),
+    "on_success_callback": telegram_notifier,
     "on_failure_callback": telegram_notifier,
     "pool": "postgres_dwh",   # дефолтный пул для всех тасков DAG'а
     "pool_slots": 1,          # сколько слотов за раз занимает таск

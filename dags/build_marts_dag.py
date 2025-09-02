@@ -13,6 +13,7 @@ default_args = {
     "owner": "airflow",
     "retries": 3,
     "on_failure_callback": telegram_notifier,
+    "on_success_callback": telegram_notifier,
     "pool": "postgres_dwh",
     "pool_slots": 1,
 }

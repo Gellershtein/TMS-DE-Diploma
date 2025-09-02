@@ -11,6 +11,7 @@ from dags.etl.utils.telegram_notifier import telegram_notifier
 default_args = {
     "owner": "airflow",
     "retries": 3,
+    "on_success_callback": telegram_notifier,
     "on_failure_callback": telegram_notifier
 }
 

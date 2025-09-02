@@ -15,6 +15,7 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 default_args = {
     'start_date': datetime(2024, 7, 29),
+    "on_success_callback": telegram_notifier,
     "on_failure_callback": telegram_notifier
 }
 

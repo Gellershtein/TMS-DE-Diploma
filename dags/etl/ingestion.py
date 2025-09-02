@@ -156,7 +156,12 @@ def ingest_from_minio(prefix: str = "", recursive: bool = True, batch_size: int 
     bucket = get_minio_bucket()
 
     pg = get_postgres_config()
-    conn = psycopg2.connect(**pg)
+    # добавил keepalive, чтобы сократить висящие соединения в TIME_WAIT и реюзать TCP
+    dsn = (
+        f"host={pg['host']} dbname={pg['dbname']} user={pg['user']} password={pg['password']} "
+        "keepalives=1 keepalives_idle=30 keepalives_interval=10 keepalives_count=5"
+    )
+    conn = psycopg2.connect(dsn)
     cur = conn.cursor()
 
     processed = 0
