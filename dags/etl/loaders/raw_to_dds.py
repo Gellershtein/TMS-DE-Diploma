@@ -1,10 +1,14 @@
+import logging
+
 import psycopg2
-from data_generator.models import User, Friend, Post, Comment, Like, Reaction, Community, GroupMember, Media, PinnedPost
-from etl.loaders.save_to_dds import save_to_dds
-from etl.config import get_postgres_config
+
+from dags.etl.config import get_postgres_config
+from dags.etl.save_to_dds import save_to_dds
+from dags.generator.models import User, Friend, Post, Comment, Like, Reaction, Community, GroupMember, Media, PinnedPost
+
+logger = logging.getLogger(__name__)
 
 # Маппинг: сущность → Pydantic модель → таблица
-
 ENTITY_META = {
     "user":      {"model": User,      "table": "users"},
     "friend":    {"model": Friend,    "table": "friends"},
@@ -17,7 +21,6 @@ ENTITY_META = {
     "media":     {"model": Media,     "table": "media"},
     "pinned_post": {"model": PinnedPost, "table": "pinned_posts"},
 }
-
 
 def process_raw_entity(entity_type):
     config = get_postgres_config()
@@ -42,11 +45,10 @@ def process_raw_entity(entity_type):
             valid += 1
         except Exception as e:
             errors += 1
-            print(f"[ERROR] Invalid {entity_type}: {e}")
-    print(f"{entity_type}: OK {valid}, ERRORS {errors}")
+            logger.error(f"[ERROR] Invalid {entity_type}: {e}")
+    logger.info(f"{entity_type}: OK {valid}, ERRORS {errors}")
     cur.close()
     conn.close()
-
 
 def process_all_entities():
     for entity_type in ENTITY_META:

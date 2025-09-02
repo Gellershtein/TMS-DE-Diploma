@@ -1,7 +1,11 @@
-import os
+import logging
+
 import psycopg2
-from etl.config import get_postgres_config
-from etl.loaders.load_sql import load_sql
+
+from dags.etl.config import get_postgres_config
+from dags.etl.loaders_utils.load_sql import load_sql
+
+logger = logging.getLogger(__name__)
 
 def save_to_dds(event: dict, entity_type: str):
     config = get_postgres_config()
@@ -20,18 +24,10 @@ def save_to_dds(event: dict, entity_type: str):
         "pinned_post": "insert_pinned_post.sql"
     }
     if entity_type not in sql_map:
-        print(f"[WARN] Unknown entity type for dds: {entity_type}")
+        logger.warning(f"[WARN] Unknown entity type for dds: {entity_type}")
         cur.close()
         conn.close()
         return
-
-    # TODO: Переписать на правильное использовании обновленного метода
-    # # Для DML (insert)
-    # sql = load_sql("insert_user.sql", layer="dml", subdir="raw")
-    # sql = load_sql("insert_comment.sql", layer="dml", subdir="dds")
-    #
-    # # Для DQL (select)
-    # sql = load_sql("select_attached_media.sql", layer="dql", subdir="dds")
 
     sql = load_sql(sql_map[entity_type], subdir="dds")
     cur.execute(sql, event)

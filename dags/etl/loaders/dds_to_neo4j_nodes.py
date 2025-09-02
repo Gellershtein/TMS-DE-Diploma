@@ -1,8 +1,13 @@
+import logging
+
 import psycopg2
 from neo4j import GraphDatabase
-from etl.config import get_postgres_config, get_neo4j_config
-from etl.loaders.load_sql import load_sql
-from etl.loaders.load_cypher import load_cypher
+
+from dags.etl.config import get_postgres_config, get_neo4j_config
+from dags.etl.loaders_utils.load_cypher import load_cypher
+from dags.etl.loaders_utils.load_sql import load_sql
+
+logger = logging.getLogger(__name__)
 
 # ENTITY_META: имя, select-скрипт, cypher-скрипт
 ENTITY_META = {
@@ -43,7 +48,7 @@ def copy_nodes_to_neo4j():
     driver = GraphDatabase.driver(neo_cfg["uri"], auth=(neo_cfg["user"], neo_cfg["password"]))
 
     for entity, meta in ENTITY_META.items():
-        print(f"[INFO] Copying {entity} nodes...")
+        logger.info(f"[INFO] Copying {entity} nodes...")
         sql = load_sql(meta["sql_file"], layer="dql", subdir="dds/nodes")
         with conn.cursor() as cur:
             cur.execute(sql)

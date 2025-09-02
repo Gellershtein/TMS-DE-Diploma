@@ -1,6 +1,7 @@
 import os
+
 import psycopg2
-from etl.config import get_postgres_config
+
 
 def load_cypher(query_file, layer="dml", subdir=""):
     """
