@@ -351,7 +351,10 @@ docker exec -it kafka \
 <a id="faq"></a>
 ## 🐞 FAQ / Известные проблемы
 
-**`connection to server at "postgres" ... Cannot assign requested address`**  
+**подвисания дагов из-за использования общего `postgres` для Airflow и DWH (raw, dds)**
+    - можно разделить и поднять разные `postgres` 
+
+**`connection to server at "postgres" ... Cannot assign requested address`**
 - Проверьте лимиты соединений в Postgres и параметры Airflow (`worker_concurrency`, `parallelism`).  
 - Используйте пулы и `max_active_runs=1` для тяжелых DAG’ов.  
 - Убедитесь, что сервисы «здоровы» (`docker compose ps`, healthchecks).
